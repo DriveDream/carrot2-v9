@@ -32,8 +32,8 @@ class CarInterface(CarInterfaceBase):
     CarController = CarController
     RadarInterface = RadarInterface
 
-    def __init__(self, CP, CarController, CarState):
-        super().__init__(CP, CarController, CarState)
+    def __init__(self, CP):
+        super().__init__(CP)
         # 实时参数读取相关变量
         self.last_params_read_time = 0
         self.params_read_interval = 20.0  # 5秒读取一次，可通过set_params_read_interval调整
@@ -47,7 +47,7 @@ class CarInterface(CarInterfaceBase):
         else:
             print(f"BYD: 参数读取间隔必须在1-30秒之间，当前值：{interval_seconds}")
 
-        def get_params_read_interval(self) -> float:
+    def get_params_read_interval(self) -> float:
         """获取当前参数读取间隔时间"""
         return self.params_read_interval
 
@@ -129,7 +129,7 @@ class CarInterface(CarInterfaceBase):
             return self.torque_from_lateral_accel_linear
 
     @staticmethod
-    def _get_params(ret: structs.CarParams, candidate, fingerprint, car_fw, experimental_long, docs) -> structs.CarParams: # type: ignore
+    def _get_params(ret: structs.CarParams, candidate, fingerprint, car_fw, alpha_long, is_release, docs) -> structs.CarParams: # type: ignore
         ret.brand = "byd"
         ret.safetyConfigs = [get_safety_config(structs.CarParams.SafetyModel.byd)]
 
@@ -178,7 +178,7 @@ class CarInterface(CarInterfaceBase):
         use_experimental_long = candidate in EXP_LONG_CAR
 
         ret.alphaLongitudinalAvailable = use_experimental_long
-        ret.openpilotLongitudinalControl = experimental_long and ret.alphaLongitudinalAvailable
+        ret.openpilotLongitudinalControl = alpha_long and ret.alphaLongitudinalAvailable
 
         ret.longitudinalTuning.kpBP, ret.longitudinalTuning.kiBP = [[0.],  [0.]]
         ret.longitudinalTuning.kpV,  ret.longitudinalTuning.kiV  = [[1.5], [0.3]]
