@@ -105,3 +105,6 @@ Pipfile
 .history
 .ionide
 .vs
+
+# Ignore specstory directory
+.specstory/
