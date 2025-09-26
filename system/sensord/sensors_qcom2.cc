@@ -122,8 +122,8 @@ int sensor_loop(I2CBus *i2c_bus_imu) {
     {new BMX055_Magn(i2c_bus_imu), "magnetometer"},
     {new BMX055_Temp(i2c_bus_imu), "temperatureSensor2"},
 
-    {new LSM6DS3_Accel(i2c_bus_imu, GPIO_LSM_INT), "accelerometer"},
-    {new LSM6DS3_Gyro(i2c_bus_imu, GPIO_LSM_INT, true), "gyroscope"},
+    {new LSM6DS3_Accel(i2c_bus_imu), "accelerometer"},
+    {new LSM6DS3_Gyro(i2c_bus_imu), "gyroscope"},
     {new LSM6DS3_Temp(i2c_bus_imu), "temperatureSensor"},
 
     {new MMC5603NJ_Magn(i2c_bus_imu), "magnetometer"},

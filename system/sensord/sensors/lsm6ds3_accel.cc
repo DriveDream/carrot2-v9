@@ -8,8 +8,8 @@
 #include "common/timing.h"
 #include "common/util.h"
 
-LSM6DS3_Accel::LSM6DS3_Accel(I2CBus *bus, int gpio_nr, bool shared_gpio) :
-  I2CSensor(bus, gpio_nr, shared_gpio) {}
+LSM6DS3_Accel::LSM6DS3_Accel(I2CBus *bus) :
+  I2CSensor(bus, 0, false) {}
 
 void LSM6DS3_Accel::wait_for_data_ready() {
   uint8_t drdy = 0;
@@ -118,7 +118,6 @@ int LSM6DS3_Accel::self_test(int test_type) {
 }
 
 int LSM6DS3_Accel::init() {
-  uint8_t value = 0;
   bool do_self_test = false;
 
   const char* env_lsm_selftest = std::getenv("LSM_SELF_TEST");
@@ -145,11 +144,6 @@ int LSM6DS3_Accel::init() {
     if (do_self_test) goto fail;
   }
 
-  ret = init_gpio();
-  if (ret < 0) {
-    goto fail;
-  }
-
   // enable continuous update, and automatic increase
   ret = set_register(LSM6DS3_ACCEL_I2C_REG_CTRL3_C, LSM6DS3_ACCEL_IF_INC);
   if (ret < 0) {
@@ -162,21 +156,6 @@ int LSM6DS3_Accel::init() {
     goto fail;
   }
 
-  ret = set_register(LSM6DS3_ACCEL_I2C_REG_DRDY_CFG, LSM6DS3_ACCEL_DRDY_PULSE_MODE);
-  if (ret < 0) {
-    goto fail;
-  }
-
-  // enable data ready interrupt for accel on INT1
-  // (without resetting existing interrupts)
-  ret = read_register(LSM6DS3_ACCEL_I2C_REG_INT1_CTRL, &value, 1);
-  if (ret < 0) {
-    goto fail;
-  }
-
-  value |= LSM6DS3_ACCEL_INT1_DRDY_XL;
-  ret = set_register(LSM6DS3_ACCEL_I2C_REG_INT1_CTRL, value);
-
 fail:
   return ret;
 }
@@ -184,22 +163,8 @@ fail:
 int LSM6DS3_Accel::shutdown() {
   int ret = 0;
 
-  // disable data ready interrupt for accel on INT1
-  uint8_t value = 0;
-  ret = read_register(LSM6DS3_ACCEL_I2C_REG_INT1_CTRL, &value, 1);
-  if (ret < 0) {
-    goto fail;
-  }
-
-  value &= ~(LSM6DS3_ACCEL_INT1_DRDY_XL);
-  ret = set_register(LSM6DS3_ACCEL_I2C_REG_INT1_CTRL, value);
-  if (ret < 0) {
-    LOGE("Could not disable lsm6ds3 acceleration interrupt!");
-    goto fail;
-  }
-
   // enable power-down mode
-  value = 0;
+  uint8_t value = 0;
   ret = read_register(LSM6DS3_ACCEL_I2C_REG_CTRL1_XL, &value, 1);
   if (ret < 0) {
     goto fail;
@@ -217,13 +182,6 @@ fail:
 }
 
 bool LSM6DS3_Accel::get_event(MessageBuilder &msg, uint64_t ts) {
-
-  // INT1 shared with gyro, check STATUS_REG who triggered
-  uint8_t status_reg = 0;
-  read_register(LSM6DS3_ACCEL_I2C_REG_STAT_REG, &status_reg, sizeof(status_reg));
-  if ((status_reg & LSM6DS3_ACCEL_DRDY_XLDA) == 0) {
-    return false;
-  }
 
   uint8_t buffer[6];
   int len = read_register(LSM6DS3_ACCEL_I2C_REG_OUTX_L_XL, buffer, sizeof(buffer));

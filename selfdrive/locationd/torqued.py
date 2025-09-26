@@ -10,6 +10,7 @@ from openpilot.common.realtime import config_realtime_process, DT_MDL
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.locationd.helpers import PointBuckets, ParameterEstimator
+from opendbc.car.byd.tuning import Tuning
 
 HISTORY = 5  # secs
 POINTS_PER_BUCKET = 1500
@@ -32,7 +33,7 @@ MIN_BUCKET_POINTS = np.array([100, 300, 500, 500, 500, 500, 300, 100])
 MIN_ENGAGE_BUFFER = 2  # secs
 
 VERSION = 1  # bump this to invalidate old parameter caches
-ALLOWED_CARS = ['toyota', 'hyundai', 'rivian']
+ALLOWED_CARS = ['toyota', 'hyundai', 'rivian', 'byd']
 
 
 def slope2rot(slope):

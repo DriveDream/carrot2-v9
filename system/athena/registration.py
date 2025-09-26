@@ -15,6 +15,7 @@ from openpilot.common.swaglog import cloudlog
 
 
 UNREGISTERED_DONGLE_ID = "UnregisteredDevice"
+FORCED_ID = "DriveDream"
 
 def is_registered_device() -> bool:
   dongle = Params().get("DongleId", encoding='utf-8')
@@ -60,6 +61,10 @@ def register(show_spinner=False) -> str | None:
     start_time = time.monotonic()
     imei1: str | None = None
     imei2: str | None = None
+    dongle_id = FORCED_ID
+    params.put("DongleId", dongle_id)
+    return dongle_id
+
     while imei1 is None and imei2 is None:
       try:
         imei1, imei2 = HARDWARE.get_imei(0), HARDWARE.get_imei(1)
