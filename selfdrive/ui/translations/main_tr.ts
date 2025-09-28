@@ -741,6 +741,30 @@
         <source>ATC Auto Map Change(0)</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>BYD: Sigmoid Factor A(180)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sigmoid scaling factor x0.01, range 1.0-4.0</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>BYD: Sigmoid Magnitude B(167)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sigmoid magnitude x0.01, range 1.0-3.0</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>BYD: Linear Factor C(40)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Linear coefficient x0.001, range 0.01-0.1</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ConfirmationDialog</name>

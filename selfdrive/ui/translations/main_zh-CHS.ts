@@ -336,6 +336,30 @@
         <translation type="unfinished">横向：扭矩摩擦(100)</translation>
     </message>
     <message>
+        <source>BYD: Sigmoid Factor A(180)</source>
+        <translation type="unfinished">比亚迪：S型曲线因子A(180)</translation>
+    </message>
+    <message>
+        <source>Sigmoid scaling factor x0.01, range 1.0-4.0</source>
+        <translation type="unfinished">S型曲线缩放因子 x0.01，范围 1.0-4.0</translation>
+    </message>
+    <message>
+        <source>BYD: Sigmoid Magnitude B(167)</source>
+        <translation type="unfinished">比亚迪：S型曲线幅度B(167)</translation>
+    </message>
+    <message>
+        <source>Sigmoid magnitude x0.01, range 1.0-3.0</source>
+        <translation type="unfinished">S型曲线幅度 x0.01，范围 1.0-3.0</translation>
+    </message>
+    <message>
+        <source>BYD: Linear Factor C(40)</source>
+        <translation type="unfinished">比亚迪：线性因子C(40)</translation>
+    </message>
+    <message>
+        <source>Linear coefficient x0.001, range 0.01-0.1</source>
+        <translation type="unfinished">线性系数 x0.001，范围 0.01-0.1</translation>
+    </message>
+    <message>
         <source>LAT: CustomSteerMax(0)</source>
         <translation type="unfinished">横向：自定义最大转向(0)</translation>
     </message>
@@ -858,6 +882,18 @@
     <message>
         <source>ADB (Android Debug Bridge) allows connecting to your device over USB or over the network. See https://docs.comma.ai/how-to/connect-to-comma for more info.</source>
         <translation>ADB（Android调试桥接）允许通过USB或网络连接到您的设备。更多信息请参见 [https://docs.comma.ai/how-to/connect-to-comma](https://docs.comma.ai/how-to/connect-to-comma)。</translation>
+    </message>
+    <message>
+        <source>Change SP</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>切换版本</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>切换openpilot版本。点击将执行版本切换脚本，在CP版本和SP版本之间切换。</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
