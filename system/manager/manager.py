@@ -178,6 +178,10 @@ def get_default_params():
     ("SteerRatioRate", "100"),
     ("NNFF", "0"),
     ("NNFFLite", "0"),
+
+    ("BYDLinearTorqueParamsA", "260"),
+    ("BYDLinearTorqueParamsB", "170"),
+    ("BYDLinearTorqueParamsC", "20"),
   ]
   return default_params
 

@@ -140,6 +140,7 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"CarSelected3", PERSISTENT},
     {"SupportedCars", PERSISTENT},
     {"SupportedCars_gm", PERSISTENT},
+    {"SupportedCars_byd", PERSISTENT},
     {"ShowDebugUI", PERSISTENT},
     {"ShowTpms", PERSISTENT},
     {"ShowDateTime", PERSISTENT},
@@ -289,4 +290,8 @@ inline static std::unordered_map<std::string, uint32_t> keys = {
     {"NNFF", PERSISTENT},
     {"NNFFLite", PERSISTENT},
     {"NNFFModelName", CLEAR_ON_OFFROAD_TRANSITION},
+
+    {"BYDLinearTorqueParamsA", PERSISTENT},
+    {"BYDLinearTorqueParamsB", PERSISTENT},
+    {"BYDLinearTorqueParamsC", PERSISTENT},
 };

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from math import exp
+import time
 
 from opendbc.car import get_safety_config, get_friction, structs
 from opendbc.car.common.conversions import Conversions as CV
@@ -31,8 +32,71 @@ class CarInterface(CarInterfaceBase):
     CarController = CarController
     RadarInterface = RadarInterface
 
+    def __init__(self, CP, CarController, CarState):
+        super().__init__(CP, CarController, CarState)
+        # 实时参数读取相关变量
+        self.last_params_read_time = 0
+        self.params_read_interval = 20.0  # 5秒读取一次，可通过set_params_read_interval调整
+        self.custom_torque_params = None
+
+    def set_params_read_interval(self, interval_seconds: float):
+        """设置参数读取间隔时间（秒）"""
+        if 1.0 <= interval_seconds <= 30.0:  # 限制在1-30秒之间
+            self.params_read_interval = interval_seconds
+            print(f"BYD: 参数读取间隔设置为 {interval_seconds} 秒")
+        else:
+            print(f"BYD: 参数读取间隔必须在1-30秒之间，当前值：{interval_seconds}")
+
+        def get_params_read_interval(self) -> float:
+        """获取当前参数读取间隔时间"""
+        return self.params_read_interval
+
+    def get_current_torque_params(self):
+        """获取当前使用的转向参数"""
+        if self.custom_torque_params is not None:
+            return {"type": "custom", "params": self.custom_torque_params}
+        else:
+            default_params = NON_LINEAR_TORQUE_PARAMS.get(self.CP.carFingerprint, [0, 0, 0])
+            return {"type": "default", "params": default_params}
+
+    def _read_custom_torque_params(self):
+        """读取自定义转向参数"""
+        try:
+            from common.params import Params
+            params = Params()
+
+            # 读取三个参数
+            param_a = params.get("BYDLinearTorqueParamsA")
+            param_b = params.get("BYDLinearTorqueParamsB")
+            param_c = params.get("BYDLinearTorqueParamsC")
+
+            # 如果所有参数都存在，则使用自定义参数
+            if param_a is not None and param_b is not None and param_c is not None:
+                try:
+                    # 界面参数A和B放大了100倍，参数C放大了1000倍
+                    a = float(param_a.decode('utf-8')) / 100.0
+                    b = float(param_b.decode('utf-8')) / 100.0
+                    c = float(param_c.decode('utf-8')) / 1000.0
+                    self.custom_torque_params = [a, b, c]
+                    print(f"BYD: 使用自定义转向参数 A={a:.3f}, B={b:.3f}, C={c:.3f}")
+                except (ValueError, AttributeError):
+                    print("BYD: 自定义转向参数格式错误，使用默认参数")
+                    self.custom_torque_params = None
+            else:
+                self.custom_torque_params = None
+
+        except Exception as e:
+            print(f"BYD: 读取自定义转向参数失败: {e}")
+            self.custom_torque_params = None
+
     def torque_from_lateral_accel_siglin(self, latcontrol_inputs: LatControlInputs, torque_params: structs.CarParams.LateralTorqueTuning,
                                     lateral_accel_error: float, lateral_accel_deadzone: float, friction_compensation: bool, gravity_adjusted: bool) -> float:
+        # 检查是否需要更新参数
+        current_time = time.time()
+        if current_time - self.last_params_read_time > self.params_read_interval:
+            self._read_custom_torque_params()
+            self.last_params_read_time = current_time
+
         friction = get_friction(lateral_accel_error, lateral_accel_deadzone, FRICTION_THRESHOLD, torque_params, friction_compensation)
 
         def sig(val):
@@ -46,9 +110,15 @@ class CarInterface(CarInterfaceBase):
         # The "lat_accel vs torque" relationship is assumed to be the sum of "sigmoid + linear" curves
         # An important thing to consider is that the slope at 0 should be > 0 (ideally >1)
         # This has big effect on the stability about 0 (noise when going straight)
-        non_linear_torque_params = NON_LINEAR_TORQUE_PARAMS.get(self.CP.carFingerprint)
-        assert non_linear_torque_params, "The params are not defined"
-        a, b, c = non_linear_torque_params
+
+        # 优先使用自定义参数，否则使用默认参数
+        if self.custom_torque_params is not None:
+            a, b, c = self.custom_torque_params
+        else:
+            non_linear_torque_params = NON_LINEAR_TORQUE_PARAMS.get(self.CP.carFingerprint)
+            assert non_linear_torque_params, "The params are not defined"
+            a, b, c = non_linear_torque_params
+
         steer_torque = (sig(latcontrol_inputs.lateral_acceleration * a) * b) + (latcontrol_inputs.lateral_acceleration * c)
         return float(steer_torque) + friction
 
@@ -59,8 +129,7 @@ class CarInterface(CarInterfaceBase):
             return self.torque_from_lateral_accel_linear
 
     @staticmethod
-    #def _get_params(ret: structs.CarParams, candidate, fingerprint, car_fw, experimental_long, docs) -> structs.CarParams: # type: ignore
-    def _get_params(ret: structs.CarParams, candidate, fingerprint, car_fw, experimental_long, is_release, docs) -> structs.CarParams:
+    def _get_params(ret: structs.CarParams, candidate, fingerprint, car_fw, experimental_long, docs) -> structs.CarParams: # type: ignore
         ret.brand = "byd"
         ret.safetyConfigs = [get_safety_config(structs.CarParams.SafetyModel.byd)]
 

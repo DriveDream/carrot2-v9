@@ -698,6 +698,9 @@ CarrotPanel::CarrotPanel(QWidget* parent) : QWidget(parent) {
   latLongToggles->addItem(new CValueControl("LateralTorqueCustom", tr("LAT: TorqueCustom(0)"), "", 0, 2, 1));
   latLongToggles->addItem(new CValueControl("LateralTorqueAccelFactor", tr("LAT: TorqueAccelFactor(2500)"), "", 1000, 6000, 10));
   latLongToggles->addItem(new CValueControl("LateralTorqueFriction", tr("LAT: TorqueFriction(100)"), "", 0, 1000, 10));
+  latLongToggles->addItem(new CValueControl("BYDLinearTorqueParamsA", tr("BYD: Sigmoid Factor A(180)"), tr("Sigmoid scaling factor x0.01, range 1.0-4.0"), 100, 400, 1));
+  latLongToggles->addItem(new CValueControl("BYDLinearTorqueParamsB", tr("BYD: Sigmoid Magnitude B(167)"), tr("Sigmoid magnitude x0.01, range 1.0-3.0"), 100, 300, 1));
+  latLongToggles->addItem(new CValueControl("BYDLinearTorqueParamsC", tr("BYD: Linear Factor C(40)"), tr("Linear coefficient x0.001, range 0.01-0.1"), 10, 100, 1));
   latLongToggles->addItem(new CValueControl("CustomSteerMax", tr("LAT: CustomSteerMax(0)"), "", 0, 30000, 5));
   latLongToggles->addItem(new CValueControl("CustomSteerDeltaUp", tr("LAT: CustomSteerDeltaUp(0)"), "", 0, 50, 1));
   latLongToggles->addItem(new CValueControl("CustomSteerDeltaDown", tr("LAT: CustomSteerDeltaDown(0)"), "", 0, 50, 1));
@@ -776,6 +779,7 @@ CarrotPanel::CarrotPanel(QWidget* parent) : QWidget(parent) {
     all_items.append(get_list((QString::fromStdString(Params().getParamPath()) + "/SupportedCars_gm").toStdString().c_str()));
     all_items.append(get_list((QString::fromStdString(Params().getParamPath()) + "/SupportedCars_toyota").toStdString().c_str()));
     all_items.append(get_list((QString::fromStdString(Params().getParamPath()) + "/SupportedCars_mazda").toStdString().c_str()));
+    all_items.append(get_list((QString::fromStdString(Params().getParamPath()) + "/SupportedCars_byd").toStdString().c_str()));
 
     QMap<QString, QStringList> car_groups;
     for (const QString& car : all_items) {
