@@ -133,8 +133,28 @@ int LSM6DS3_Gyro::init() {
     if (do_self_test) goto fail;
   }
 
-  // TODO: set scale. Default is +- 250 deg/s
-  ret = set_register(LSM6DS3_GYRO_I2C_REG_CTRL2_G, LSM6DS3_GYRO_ODR_104HZ);
+  // Disable interrupts for polling mode (since GPIO is damaged)
+  ret = set_register(LSM6DS3_GYRO_I2C_REG_INT1_CTRL, 0x00);
+  if (ret < 0) {
+    goto fail;
+  }
+
+  // Enable BDU and IF_INC like accelerometer for consistency
+  ret = set_register(0x12, 0x44);  // CTRL3_C: BDU=1, IF_INC=1
+  if (ret < 0) {
+    goto fail;
+  }
+
+  // Optimized configuration: 208Hz ODR with ±500dps scale for better performance
+  // CTRL2_G: ODR=208Hz (0101), FS=±500dps (01)
+  ret = set_register(LSM6DS3_GYRO_I2C_REG_CTRL2_G, 0x54);  // 208Hz, ±500dps
+  if (ret < 0) {
+    goto fail;
+  }
+
+  // Enable gyroscope low-pass filter for noise reduction
+  // CTRL7_G: HPM=00, HP_EN=0, LP_EN=1
+  ret = set_register(0x16, 0x80);  // Enable LPF
   if (ret < 0) {
     goto fail;
   }
@@ -166,11 +186,18 @@ fail:
 
 bool LSM6DS3_Gyro::get_event(MessageBuilder &msg, uint64_t ts) {
 
+  uint8_t status = 0;
+  int len = read_register(LSM6DS3_GYRO_I2C_REG_STAT_REG, &status, sizeof(status));
+  if (len < 0 || !(status & LSM6DS3_GYRO_DRDY_GDA)) {
+    return false; // No new data available
+  }
+
   uint8_t buffer[6];
-  int len = read_register(LSM6DS3_GYRO_I2C_REG_OUTX_L_G, buffer, sizeof(buffer));
+  len = read_register(LSM6DS3_GYRO_I2C_REG_OUTX_L_G, buffer, sizeof(buffer));
   assert(len == sizeof(buffer));
 
-  float scale = 8.75 / 1000.0;
+  // For ±500 deg/s: sensitivity is 17.50 mdps/LSB
+  float scale = 17.50 / 1000.0; // Convert mdps to deg/s
   float x = DEG2RAD(read_16_bit(buffer[0], buffer[1]) * scale);
   float y = DEG2RAD(read_16_bit(buffer[2], buffer[3]) * scale);
   float z = DEG2RAD(read_16_bit(buffer[4], buffer[5]) * scale);

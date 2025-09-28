@@ -144,14 +144,28 @@ int LSM6DS3_Accel::init() {
     if (do_self_test) goto fail;
   }
 
-  // enable continuous update, and automatic increase
-  ret = set_register(LSM6DS3_ACCEL_I2C_REG_CTRL3_C, LSM6DS3_ACCEL_IF_INC);
+  // Disable interrupts for polling mode (since GPIO is damaged)
+  ret = set_register(LSM6DS3_ACCEL_I2C_REG_INT1_CTRL, 0x00);
   if (ret < 0) {
     goto fail;
   }
 
-  // TODO: set scale and bandwidth. Default is +- 2G, 50 Hz
-  ret = set_register(LSM6DS3_ACCEL_I2C_REG_CTRL1_XL, LSM6DS3_ACCEL_ODR_104HZ);
+  // Enable BDU (Block Data Update) and IF_INC (Auto-increment) - improved configuration
+  ret = set_register(LSM6DS3_ACCEL_I2C_REG_CTRL3_C, 0x44);  // BDU=1, IF_INC=1
+  if (ret < 0) {
+    goto fail;
+  }
+
+  // Configure for 104Hz ODR with ±2g scale to match service frequency
+  // CTRL1_XL: ODR=104Hz (0100), FS=±2g (00), BW=400Hz (00)
+  ret = set_register(LSM6DS3_ACCEL_I2C_REG_CTRL1_XL, LSM6DS3_ACCEL_ODR_104HZ);  // 104Hz, ±2g
+  if (ret < 0) {
+    goto fail;
+  }
+
+  // Enable accelerometer low-pass filter for better noise performance
+  // CTRL8_XL: LPF2_XL_EN=1, HP_SLOPE_XL_EN=0
+  ret = set_register(0x17, 0x80);  // Enable LPF2
   if (ret < 0) {
     goto fail;
   }
@@ -182,9 +196,15 @@ fail:
 }
 
 bool LSM6DS3_Accel::get_event(MessageBuilder &msg, uint64_t ts) {
+  // Check if new data is available
+  uint8_t status = 0;
+  int len = read_register(LSM6DS3_ACCEL_I2C_REG_STAT_REG, &status, sizeof(status));
+  if (len < 0 || !(status & LSM6DS3_ACCEL_DRDY_XLDA)) {
+    return false; // No new data available
+  }
 
   uint8_t buffer[6];
-  int len = read_register(LSM6DS3_ACCEL_I2C_REG_OUTX_L_XL, buffer, sizeof(buffer));
+  len = read_register(LSM6DS3_ACCEL_I2C_REG_OUTX_L_XL, buffer, sizeof(buffer));
   assert(len == sizeof(buffer));
 
   float scale = 9.81 * 2.0f / (1 << 15);
