@@ -107,6 +107,45 @@ def acc_cmd(packer, CP, cam_msg: dict, mrr_leaddist, accel, rfss, sss, longActiv
     data = packer.make_can_msg("ACC_CMD", CanBus.ESC, values)[1]
     values["CheckSum"] = byd_checksum(0xAF, data)
     return packer.make_can_msg("ACC_CMD", CanBus.ESC, values)
+def acc_cmd_advanced(packer, CP, cam_msg: dict, mrr_leaddist, accel, jerk_upper, jerk_lower,
+                    comfort_upper, comfort_lower, rfss, sss, longActive):
+    """
+    高级ACC命令 - 使用智能纵向控制器的输出参数
+    """
+    values = {}
+
+    values = {s: cam_msg[s] for s in [
+        "AccelCmd",
+        "ComfortBandUpper",
+        "ComfortBandLower",
+        "JerkUpperLimit",
+        "SETME1_0x1",
+        "JerkLowerLimit",
+        "ResumeFromStandstill",
+        "StandstillState",
+        "BrakeBehaviour",
+        "AccReqNotStandstill",
+        "AccControlActive",
+        "AccOverrideOrStandstill",
+        "EspBehaviour",
+        "Counter",
+        "SETME2_0xF",
+    ]}
+
+    if longActive:
+        values.update({
+            "AccelCmd": accel,
+            "ComfortBandUpper": comfort_upper,
+            "ComfortBandLower": comfort_lower,
+            "JerkUpperLimit": jerk_upper,
+            "JerkLowerLimit": jerk_lower,
+            "ResumeFromStandstill": rfss,
+            "StandstillState": sss,
+        })
+
+    data = packer.make_can_msg("ACC_CMD", CanBus.ESC, values)[1]
+    values["CheckSum"] = byd_checksum(0xAF, data)
+    return packer.make_can_msg("ACC_CMD", CanBus.ESC, values)
 
 # send fake torque feedback from eps to trick MPC, preventing DTC, so that safety features such as AEB still working
 def create_fake_318(packer, CP, esc_msg: dict, faketorque, laks_reqprepare, laks_active , enabled, counter):

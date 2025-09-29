@@ -9,6 +9,15 @@ VisualAlert = structs.CarControl.HUDControl.VisualAlert
 ButtonType = structs.CarState.ButtonEvent.Type
 LongCtrlState = structs.CarControl.Actuators.LongControlState
 
+# 添加Params导入以支持动态参数调整
+try:
+  from openpilot.common.params import Params
+except ImportError:
+  # 如果没有openpilot环境，创建一个空的Params类
+  class Params:
+    def get_int(self, key):
+      return 0
+
 class CarController(CarControllerBase):
   def __init__(self, dbc_names, CP):
     super().__init__(dbc_names, CP)
@@ -39,9 +48,39 @@ class CarController(CarControllerBase):
 
     self.apply_accel_last = 0
 
+    # 存储原始参数值，用于动态调整
+    self.params = CarControllerParams(CP)
+
 
   def update(self, CC, CS, now_nanos):
     can_sends = []
+
+    # 每50帧检查一次动态参数调整（类似Hyundai和Toyota的实现）
+    if self.frame % 50 == 0:
+      try:
+        params = Params()
+        steerMax = params.get_int("CustomSteerMax")
+        steerDeltaUp = params.get_int("CustomSteerDeltaUp")
+        steerDeltaDown = params.get_int("CustomSteerDeltaDown")
+
+        # 如果设置了自定义参数，则使用自定义值，否则使用默认值
+        if steerMax > 0:
+          self.params.STEER_MAX = steerMax
+        else:
+          self.params.STEER_MAX = CarControllerParams.STEER_MAX
+
+        if steerDeltaUp > 0:
+          self.params.STEER_DELTA_UP = steerDeltaUp
+        else:
+          self.params.STEER_DELTA_UP = CarControllerParams.STEER_DELTA_UP
+
+        if steerDeltaDown > 0:
+          self.params.STEER_DELTA_DOWN = steerDeltaDown
+        else:
+          self.params.STEER_DELTA_DOWN = CarControllerParams.STEER_DELTA_DOWN
+      except:
+        # 如果Params不可用，使用默认参数
+        pass
 
     if (self.frame - self.last_steer_frame) >= CarControllerParams.STEER_STEP:
 
@@ -86,14 +125,16 @@ class CarController(CarControllerBase):
           else:
             new_steer_pu = steer_desire
 
-          new_steer = int(round(new_steer_pu * CarControllerParams.STEER_MAX))
+          # 使用动态调整后的STEER_MAX参数
+          new_steer = int(round(new_steer_pu * self.params.STEER_MAX))
 
-          if self.steer_softstart_limit < CarControllerParams.STEER_MAX :
+          if self.steer_softstart_limit < self.params.STEER_MAX :
             self.steer_softstart_limit = self.steer_softstart_limit + CarControllerParams.STEER_SOFTSTART_STEP
             new_steer = np.clip(new_steer, -self.steer_softstart_limit, self.steer_softstart_limit)
 
+          # 使用动态调整后的参数进行转向限制
           apply_torque = apply_driver_steer_torque_limits(new_steer, self.apply_torque_last,
-                                                          CS.out.steeringTorque, CarControllerParams)
+                                                          CS.out.steeringTorque, self.params)
 
         else :
           if CS.lkas_prepared:
@@ -109,8 +150,9 @@ class CarController(CarControllerBase):
       elif self.lat_safeoff:
         if self.apply_torque_last == 0:
           self.lat_safeoff = 0
+        # 使用动态调整后的参数进行转向限制
         apply_torque = apply_driver_steer_torque_limits(0, self.apply_torque_last,
-                                                          CS.out.steeringTorque, CarControllerParams)
+                                                          CS.out.steeringTorque, self.params)
 
       else:
         self.lkas_req_prepare = 0
@@ -169,9 +211,10 @@ class CarController(CarControllerBase):
       self.last_acc_frame = self.frame + 1
 
     new_actuators = CC.actuators.as_builder()
-    new_actuators.torque = self.apply_torque_last / CarControllerParams.STEER_MAX
+    # 使用动态调整后的STEER_MAX参数进行输出计算
+    new_actuators.torque = self.apply_torque_last / self.params.STEER_MAX
     new_actuators.torqueOutputCan = self.apply_torque_last
-    #new_actuators.steer = self.apply_torque_last / CarControllerParams.STEER_MAX
+    #new_actuators.steer = self.apply_torque_last / self.params.STEER_MAX
     #new_actuators.steerOutputCan = self.apply_torque_last
     new_actuators.accel = float(self.apply_accel_last)
     new_actuators.steeringAngleDeg = float(CS.out.steeringAngleDeg)
